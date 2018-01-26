@@ -12,6 +12,10 @@ POSTGRESQL_SOURCE :=                          \
     build/postgresql/delete-database.sh       \
     build/postgresql/create-database.sh
 
+GETH_SOURCE :=                              \
+    build/geth/Dockerfile                   \
+    build/geth/syncing-blockchain.sh
+
 CONCENT_API_SOURCE :=                           \
     build/concent-api/install-concent-api.sh    \
     build/concent-api/install-dependencies.sh   \
@@ -36,7 +40,7 @@ endif
 $(info IMAGE_PREFIX=$(IMAGE_PREFIX))
 
 
-all: build/ nginx-proxy nginx-storage concent-api postgresql
+all: build/ nginx-proxy nginx-storage concent-api postgresql geth
 
 nginx-proxy: $(NGINX_PROXY_SOURCE) build/nginx-proxy/concent-api-assets.tar build/nginx-proxy/concent-api-docs.tar
 	docker build -t $(IMAGE_PREFIX)nginx-proxy:$(IMAGE_VERSION) build/nginx-proxy/
@@ -49,6 +53,10 @@ nginx-storage: $(NGINX_STORAGE_SOURCE)
 postgresql: $(POSTGRESQL_SOURCE)
 	docker build -t $(IMAGE_PREFIX)postgresql:$(IMAGE_VERSION) build/postgresql/
 	docker tag $(IMAGE_PREFIX)postgresql:$(IMAGE_VERSION) $(IMAGE_PREFIX)postgresql:latest
+
+geth: $(GETH_SOURCE)
+	docker build -t $(IMAGE_PREFIX)geth:$(IMAGE_VERSION) build/geth/
+	docker tag $(IMAGE_PREFIX)geth:$(IMAGE_VERSION) $(IMAGE_PREFIX)geth:latest
 
 concent-api: $(CONCENT_API_SOURCE) build/concent-api/requirements.lock
 	docker build -t $(IMAGE_PREFIX)concent-api:$(IMAGE_VERSION) build/concent-api/
@@ -64,6 +72,9 @@ nginx-storage-clean:
 
 postgresql-clean:
 	docker rmi $(IMAGE_PREFIX)postgresql:$(IMAGE_VERSION) --force
+
+geth-clean:
+	docker rmi $(IMAGE_PREFIX)geth:$(IMAGE_VERSION) --force
 
 concent-api-clean:
 	docker rmi $(IMAGE_PREFIX)concent-api:$(IMAGE_VERSION) --force
@@ -117,6 +128,7 @@ clean:
     nginx-proxy   nginx-proxy-clean     \
     nginx-storage nginx-storage-clean   \
     postgresql    postgresql-clean      \
+    geth          geth-clean            \
     concent-api   concent-api-clean     \
     docker-clean                        \
     clean
