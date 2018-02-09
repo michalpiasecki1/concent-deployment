@@ -4,17 +4,18 @@
 kubectl create configmap nginx-config-snippets                          \
     --from-file=error-pages.conf=config-maps/nginx/error-pages.conf
 
-kubectl create secret generic nginx-storage-secrets                              \
-    --from-file=nginx-storage-ssl.crt=concent-secrets/nginx-storage-ssl.crt      \
-    --from-file=nginx-storage-ssl.key=concent-secrets/nginx-storage-ssl.key
+kubectl create secret generic nginx-storage-secrets                                 \
+    --from-file=nginx-storage-ssl.crt=concent-secrets/nginx-storage-ssl.crt         \
+    --from-file=nginx-storage-ssl.key=concent-secrets/nginx-storage-ssl.key         \
+    --from-file=nginx-storage-dhparam.pem=concent-secrets/nginx-storage-dhparam.pem
 
 kubectl create configmap nginx-storage-configs                          \
     --from-file=ssl.conf=config-maps/nginx-storage/ssl.conf             \
     --from-file=default.conf=config-maps/nginx-storage/default.conf     \
 
-kubectl create secret generic nginx-proxy-secrets                              \
-    --from-file=nginx-proxy-ssl.crt=concent-secrets/nginx-proxy-ssl.crt        \
-    --from-file=nginx-proxy-ssl.key=concent-secrets/nginx-proxy-ssl.key        \
+kubectl create secret generic nginx-proxy-secrets                                \
+    --from-file=nginx-proxy-ssl.crt=concent-secrets/nginx-proxy-ssl.crt          \
+    --from-file=nginx-proxy-ssl.key=concent-secrets/nginx-proxy-ssl.key          \
     --from-file=nginx-proxy-dhparam.pem=concent-secrets/nginx-proxy-dhparam.pem
 
 kubectl create secret generic concent-api-secrets            \
