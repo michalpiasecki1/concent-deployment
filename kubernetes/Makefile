@@ -30,6 +30,7 @@ CLUSTER_SCRIPTS :=                                          \
     build/concent-secrets/nginx-storage-ssl.key             \
     build/secrets/control-db-secrets.yml                    \
     build/secrets/storage-db-secrets.yml                    \
+    build/concent-secrets/nginx-proxy-dhparam.pem           \
     build/secrets/django-admin-fixture.yaml                 \
     build/jobs/create-control-database.yml                  \
     build/jobs/migrate-control-database.yml                 \

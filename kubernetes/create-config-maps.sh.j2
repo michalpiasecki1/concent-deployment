@@ -14,7 +14,8 @@ kubectl create configmap nginx-storage-configs                          \
 
 kubectl create secret generic nginx-proxy-secrets                              \
     --from-file=nginx-proxy-ssl.crt=concent-secrets/nginx-proxy-ssl.crt        \
-    --from-file=nginx-proxy-ssl.key=concent-secrets/nginx-proxy-ssl.key
+    --from-file=nginx-proxy-ssl.key=concent-secrets/nginx-proxy-ssl.key        \
+    --from-file=nginx-proxy-dhparam.pem=concent-secrets/nginx-proxy-dhparam.pem
 
 kubectl create secret generic concent-api-secrets            \
     --from-file=secrets.py=concent-secrets/secrets.py        \
