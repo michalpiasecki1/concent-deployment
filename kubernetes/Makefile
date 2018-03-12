@@ -22,7 +22,6 @@ CLUSTER_SCRIPTS :=                                          \
     build/config-maps/concent-api/local_settings.py         \
     build/config-maps/database-jobs/local_settings.py       \
     build/config-maps/nginx-storage/default.conf            \
-    build/config-maps/nginx-storage/ssl.conf                \
     build/concent-secrets/secrets.py                        \
     build/concent-secrets/nginx-proxy-ssl.crt               \
     build/concent-secrets/nginx-proxy-ssl.key               \

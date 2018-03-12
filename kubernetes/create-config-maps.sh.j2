@@ -10,8 +10,8 @@ kubectl create secret generic nginx-storage-secrets                             
     --from-file=nginx-storage-dhparam.pem=concent-secrets/nginx-storage-dhparam.pem
 
 kubectl create configmap nginx-storage-configs                          \
-    --from-file=ssl.conf=config-maps/nginx-storage/ssl.conf             \
-    --from-file=default.conf=config-maps/nginx-storage/default.conf     \
+    --from-file=ssl.conf=config-maps/nginx/ssl.conf                     \
+    --from-file=default.conf=config-maps/nginx-storage/default.conf
 
 kubectl create secret generic nginx-proxy-secrets                                \
     --from-file=nginx-proxy-ssl.crt=concent-secrets/nginx-proxy-ssl.crt          \
