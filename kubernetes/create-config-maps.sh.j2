@@ -23,7 +23,7 @@ kubectl create secret generic concent-api-secrets            \
     --from-literal=__init__.py=
 
 kubectl create configmap nginx-configs                              \
-    --from-file=ssl.conf=config-maps/nginx-proxy/ssl.conf           \
+    --from-file=ssl.conf=config-maps/nginx/ssl.conf                 \
     --from-file=default.conf=config-maps/nginx-proxy/default.conf
 
 kubectl create configmap concent-api-settings                                \
