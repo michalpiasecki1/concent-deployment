@@ -241,3 +241,56 @@ docker run                         \
 curl http://localhost:8001/
 ```
 
+### Virtual Machine that allow create docker components for debugging purpose
+
+Step-by-step instruction to building and running virtual machine with all needed dockers.
+
+- Install require libs:
+
+```bash
+apt-get update
+apt-get install vagrant virtualbox
+```
+- Go to virtual machine directory
+
+```bash
+cd <path to concent deployment repository>/concent-vm/
+```
+
+- Specify branch/version via `CONCENT_DEPLOYMENT_VERSION` environment variable which is in `Vagrant` file (default: master)
+
+```bash
+CONCENT_DEPLOYMENT_VERSION: "master"
+```
+
+- Initialized and run virtual machine
+
+```bash
+vagrant up
+```
+
+- If you have a problem with `vboxdrv` kernel module, try:
+
+```bash
+sudo modprobe vboxdrv
+```
+
+Useful command(You need be in `concent-vm` directory):
+
+- Stop virtual machine
+
+```bash
+vagrant halt
+```
+
+- Destroy virtual machine
+
+```bash
+vagrant destroy
+```
+
+- Connect to virtual machine
+
+```bash
+vagrant ssh
+```

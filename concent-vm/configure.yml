@@ -1,0 +1,198 @@
+- hosts:
+    - vagrant
+  vars_files:
+    - ../containers/versions.yml
+    - ../concent-builder/repositories.yml
+    - vars.yml
+  tasks:
+    - become:      yes
+      become_user: root
+      block:
+        - name:   Install required packages for apt_key and apt_repository
+          apt:  name={{ item }}
+          with_items:
+            - apt-transport-https
+            - ca-certificates
+            - curl
+
+        - name:   Use pinning to ensure that packages from testing are installed only of stable packages are not available
+          copy:
+            src:  ../concent-builder/files/testing.pref
+            dest: /etc/apt/preferences.d/testing.pref
+
+        - name:   Enable the testing repository
+          apt_repository:
+            repo:  "deb http://ftp.de.debian.org/debian testing main"
+            state: present
+
+        - name:   Add Docker repository key
+          apt_key:
+            url:   https://apt.dockerproject.org/gpg
+            state: present
+
+        - name:   Add Docker.io apt repository
+          apt_repository:
+            repo:  "deb https://apt.dockerproject.org/repo {{ ansible_distribution|lower }}-{{ ansible_distribution_release }} main"
+            state: present
+
+        - name:   Install system updates for Debian
+          apt:  update_cache=yes
+
+        - name:   Install basic packages
+          apt:  name={{ item }}
+          with_items:
+            - ncdu
+            - tree
+            - htop
+            - tmux
+            - vim
+
+        - name:   Install dependencies
+          apt:  name={{ item }}
+          with_items:
+            - build-essential
+            - python2.7
+            - python-pip  # For Python 2
+            - libssl-dev
+            - pkg-config
+            - libsecp256k1-dev
+            - git
+            - docker-engine={{ docker_version }}
+            - ansible
+            - libpq-dev
+            - gcc
+            - python3-yaml
+            - postgresql-9.6
+            - python-psycopg2
+            - blender
+            - libsm6
+
+        - name:   Install dependencies from testing
+          apt:  name={{ item }} default_release=testing
+          with_items:
+            - python{{ python_version }}
+            - python{{ python_version }}-dev
+            - virtualenv
+
+        - name:   apt autoclean
+          command: apt autoclean
+
+        - name:   apt autoremove
+          command: apt autoremove --assume-yes
+
+        - name:   Install yasha in global python environment using pip
+          pip:
+            name: yasha
+
+        - name:   Create user that will be used for building stuff
+          user:
+            name:   builder
+            state:  present
+            groups: docker
+
+        - name:   Add docker group to vagrant user
+          user:
+            name:   vagrant
+            groups: docker
+            append: yes
+
+    - become:      yes
+      become_user: builder
+      block:
+        - name:   Check if rabbitmq container is running
+          command:       docker inspect -f {% raw %}"{{.State.Running}}"{% endraw %} rabbitmq
+          register:      rabbitmq_exist
+          ignore_errors: True
+
+        - name:   Run rabbitmq container
+          command: docker run                                                                                    \
+              --rm                                                                                               \
+              --detach                                                                                           \
+              --hostname rabbitmq-server                                                                         \
+              --network host                                                                                     \
+              --name rabbitmq                                                                                    \
+              rabbitmq:{{ rabbitmq_alpine_version }}-alpine
+          when: rabbitmq_exist is failed or rabbitmq_exist.stdout == "false"
+
+        - name:   Check if geth container is running
+          command:       docker inspect -f {% raw %}"{{.State.Running}}"{% endraw %} geth
+          register:      geth_exist
+          ignore_errors: True
+
+        - name:   Run geth container
+          command: docker run                                                                                    \
+              --rm                                                                                               \
+              --detach                                                                                           \
+              --network host                                                                                     \
+              --volume /home/vagrant/blockchain:/blockchain
+              --name geth                                                                                        \
+              ethereum/client-go:{{ geth_version }}                                                              \
+              --rinkeby                                                                                          \
+              --datadir /blockchain/.ethereum/rinkeby/                                                           \
+              --syncmode fast                                                                                    \
+              --cache 512                                                                                        \
+              --rpc                                                                                              \
+              --rpcaddr 0.0.0.0                                                                                  \
+              --rpcapi "eth, web3, net"                                                                          \
+              --ipcdisable
+          when: geth_exist is failed or geth_exist.stdout == "false"
+
+        - name:   Clone concent-deployment repository
+          git:
+            repo:    "{{ repositories['concent-deployment'].url }}"
+            dest:    "{{ concent_deployment_dir }}"
+            version: "{{ CONCENT_DEPLOYMENT_VERSION }}"
+            clone:   yes
+            update:  yes
+
+        - name:   Build nginx-storage container
+          make:
+            chdir:  "{{ concent_deployment_dir }}/containers"
+            target: nginx-storage
+
+        - name:   Create directory for nginx-storage script
+          file:
+            path:  ~/bin
+            state: directory
+
+        - name:   Copy script which is run nginx-storage locally
+          command: cp --preserve                                              \
+              "{{ concent_deployment_dir }}/concent-vm/run-nginx-storage.sh"  \
+              "~/bin/run-nginx-storage.sh"
+
+    - become:      yes
+      become_user: root
+      block:
+        - name:   Change postgresql settings to accept local connection
+          lineinfile:
+            path: /etc/postgresql/9.6/main/postgresql.conf
+            line: "listen_addresses='*'"
+
+        - name:   Change postgresql to trust local connection without password
+          command: cp --preserve                                           \
+              "{{ concent_deployment_dir }}/concent-vm/pg_hba.conf"        \
+              "/etc/postgresql/9.6/main/pg_hba.conf"
+
+        - name:   Restart postgresql service
+          service:
+            name:  postgresql
+            state: restarted
+
+        - name:   Copy nginx service which is run nginx-storage locally
+          command: cp --preserve                                           \
+              "{{ concent_deployment_dir }}/concent-vm/nginx.service"      \
+              "/etc/systemd/system/nginx.service"
+
+        - name:   Run nginx-storage service
+          service:
+            name:  nginx
+            state: started
+
+        - name:   Create control and storage database
+          postgresql_db:
+            name: "{{ item }}"
+          with_items:
+            - concent_api
+            - storage
+          become:      yes
+          become_user: postgres
