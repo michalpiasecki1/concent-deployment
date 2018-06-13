@@ -275,6 +275,25 @@ vagrant up
 sudo modprobe vboxdrv
 ```
 
+- Install concent application in virtual machine.
+Add `extra_settings.py` file with concent secrets to `cd <path to concent deployment repository>/concent-vm/`
+Set `$concent_version` to specific branch or tag before proceeding.
+
+```bash
+ ansible-playbook --extra-vars concent_version=$concent_version --private-key=.vagrant/machines/default/virtualbox/private_key -u vagrant -i inventory install-concent.yml
+```
+
+You also need run server in concent directory(`~/concent/concent_api`):
+
+```bash
+gunicorn concent_api.wsgi:application --bind 0.0.0.0:8000
+```
+You can also use:
+
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+
 Useful command(You need be in `concent-vm` directory):
 
 - Stop virtual machine

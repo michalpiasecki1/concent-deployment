@@ -14,3 +14,6 @@
 
 # Attached disk to vagrant
 /concent-vm/disk/
+
+# This file must be provided by the user
+/concent-vm/extra_settings.py

@@ -1,0 +1,90 @@
+- hosts:
+    - vagrant
+  vars_files:
+    - ../containers/versions.yml
+    - ../concent-builder/repositories.yml
+    - vars.yml
+  tasks:
+    - become:      yes
+      become_user: vagrant
+      block:
+        - name:   Clone concent repository
+          git:
+            repo:    "{{ repositories.concent.url }}"
+            dest:    "{{ concent_dir }}"
+            version: "{{ concent_version }}"
+            clone:   yes
+            update:  yes
+
+        - name:   Create virtualenv for concent
+          command:  virtualenv ~/virtualenv --python python3.6 creates="~/virtualenv"
+
+        - name:   Install requirements for concent
+          pip:
+            requirements:       "{{ concent_dir }}/{{ item }}"
+            virtualenv:         ~/virtualenv
+            virtualenv_python:  python3.6
+          with_items:
+            - concent_api/requirements.lock
+            - requirements-development.txt
+
+        - name:   Install gunicorn
+          pip:
+            name:        gunicorn
+            virtualenv:  ~/virtualenv
+            version:     "{{ gunicorn_version }}"
+
+    - become:      yes
+      become_user: root
+      block:
+        - name:   Copy extra_settings.py from host computer to the remote server
+          copy:
+            src:    "{{ item }}"
+            dest:   "{{ concent_dir }}/concent_api/concent_api/settings/{{ item }}"
+            owner:  vagrant
+            group:  vagrant
+            mode:   0644
+          with_items:
+            - extra_settings.py
+            - local_settings.py
+
+    - become:      yes
+      become_user: vagrant
+      block:
+        - name:   Create verifier_storage directory
+          file:
+            path:  "{{ concent_dir }}/concent_api/verifier_storage"
+            state: directory
+
+        - name:   Create REALEASE-VERSION file
+          shell: echo -n $(git describe --always) > ~/concent/RELEASE-VERSION
+          args:
+            chdir: "{{ concent_dir }}"
+
+        - name:   Migrate databases
+          django_manage:
+              command:    "migrate --database {{ item }}"
+              app_path:   "{{ concent_dir }}/concent_api"
+              virtualenv: "~/virtualenv"
+          with_items:
+            - control
+            - storage
+
+        - name:   Check if superuser already exist
+          shell: echo "from django.contrib.auth import get_user_model; User = get_user_model(); print(User.objects.filter(username='admin').count()>0)" | ~/virtualenv/bin/python ./manage.py shell
+          args:
+            chdir: "{{ concent_dir }}/concent_api"
+          register: superuser_existed
+
+        - name: Create django superuser
+          shell: echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@example.com', 'password')" | ~/virtualenv/bin/python ./manage.py shell
+          args:
+            chdir: "{{ concent_dir }}/concent_api"
+          when: superuser_existed.stdout == 'False'
+
+        - name:   Run manage.py check
+          django_manage:
+            command:      "check"
+            app_path:     "{{ concent_dir }}/concent_api"
+            virtualenv:   "~/virtualenv"
+          ignore_errors:  True
