@@ -275,8 +275,9 @@ vagrant up
 sudo modprobe vboxdrv
 ```
 
-- Install concent application in virtual machine.
-Add `extra_settings.py` file with concent secrets to `cd <path to concent deployment repository>/concent-vm/`
+- Install concent application in the virtual machine.
+
+Add `extra_settings.py` file with concent secrets to `cd <path to concent deployment repository>/concent-vm/`.
 Set `$concent_version` to specific branch or tag before proceeding.
 
 ```bash
@@ -313,3 +314,50 @@ vagrant destroy
 ```bash
 vagrant ssh
 ```
+
+# Helper scripts
+
+`concent-env.sh`
+- run virtualenv and change directory to `concent`
+
+```bash
+source concent-env.sh
+```
+
+`concent-reset.sh`
+- destroys and recreate databases
+- migrates the databases
+- empties RabbitMQ queues
+- re-creates the superuser account
+- restarts all the services
+
+```bash
+concent-reset.sh
+```
+
+`concent-migrate.sh`
+- migrates the databases
+
+```bash
+concent-migrate.sh
+```
+
+`concent-update.sh`
+- fetches the latest code from git
+- checkouts the branch(default `master`)
+- destroys and recreate the virtualenv
+- installs requirements in the virtualenv
+- migrates the databases
+
+```bash
+concent-update.sh <branch>
+```
+
+`concent-run.sh`
+- starts `manage.py runserver`
+- starts 3 celery worker instances with different queues
+
+```bash
+concent-run.sh
+```
+

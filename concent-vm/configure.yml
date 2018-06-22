@@ -196,3 +196,12 @@
             - storage
           become:      yes
           become_user: postgres
+
+        - name:   Copy helper scripts for managing Concent
+          command: cp                                                            \
+              --recursive                                                        \
+              --preserve                                                         \
+              "{{ concent_deployment_dir }}/concent-vm/helper-scripts/."         \
+              "~/bin/"
+          become:      yes
+          become_user: vagrant
