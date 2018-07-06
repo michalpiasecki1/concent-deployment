@@ -294,6 +294,13 @@ You can also use:
 ```bash
 python manage.py runserver 0.0.0.0:8000
 ```
+- Install golem in the virtual machine
+
+Set `$golem_version` to specific branch or tag before proceeding.
+
+```bash
+ansible-playbook --extra-vars golem_version=$golem_version --private-key=.vagrant/machines/default/virtualbox/private_key -u vagrant -i inventory install-golem.yml
+```
 
 Useful command(You need be in `concent-vm` directory):
 
@@ -361,3 +368,22 @@ concent-update.sh <branch>
 concent-run.sh
 ```
 
+`golem-env.sh`
+- run virtualenv and change directory to `golem`
+
+```bash
+source golem-env.sh
+```
+
+`golem-run-console-mode.sh`
+- starts golemapp in console mode
+
+```bash
+golem-run-console-mode.sh --accept-terms --password <password>
+```
+
+If you want to check all golemapp usage options:
+
+```bash
+golem-run-console-mode.sh --help
+```

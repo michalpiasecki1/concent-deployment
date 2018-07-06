@@ -27,11 +27,17 @@ Vagrant.configure("2") do |config|
     end
 
     blockchain_disk = './disk/blockchain_disk.vdi'
+    golem_blockchain_disk = './disk/golem_blockchain_disk.vdi'
+
     config.vm.provider "virtualbox" do |vb|
         if not File.exists?(blockchain_disk)
           vb.customize ['createhd', '--filename', blockchain_disk, '--variant', 'Fixed', '--size', 30 * 1024]
         end
+        if not File.exists?(golem_blockchain_disk)
+          vb.customize ['createhd', '--filename', golem_blockchain_disk, '--variant', 'Fixed', '--size', 1 * 1024]
+        end
         vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', blockchain_disk, '--hotpluggable', 'on']
+        vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', golem_blockchain_disk, '--hotpluggable', 'on']
     end
 
         if not File.exists?(blockchain_disk)
@@ -40,12 +46,31 @@ Vagrant.configure("2") do |config|
             SHELL
         end
 
+        if not File.exists?(golem_blockchain_disk)
+            config.vm.provision "shell", inline: <<-SHELL
+                sudo mkfs.ext4 /dev/sdc
+            SHELL
+        end
+
     config.vm.provision "shell", run: "always", inline: <<-SHELL
-        directory=/home/vagrant/blockchain
-        if [ ! -d "$directory" ]; then
-            mkdir $directory
-        fi
-        mountpoint -q $directory || sudo mount /dev/sdb $directory
+        directories=(
+            /home/vagrant/blockchain
+            /home/vagrant/.local
+        )
+        partition_name=(
+            /dev/sdb
+            /dev/sdc
+        )
+        for directory in "${directories[@]}"; do
+            if [ ! -d "$directory" ]; then
+                mkdir $directory
+            fi
+            mountpoint -q $directory || sudo mount ${partition_name[$index]} $directory
+            ((index++))
+        done
+        # Create docker group and add your user to it.
+        grep -q docker /etc/group || sudo groupadd docker
+        sudo usermod -aG docker vagrant
     SHELL
 
     config.trigger.after :halt do
@@ -53,6 +78,9 @@ Vagrant.configure("2") do |config|
         machineId = File.read(".vagrant/machines/default/virtualbox/id")
         run "VBoxManage storageattach '#{machineId}'" +
         " --storagectl 'SATA Controller' --port 1 --device 0 --type hdd --medium none"
+        run "VBoxManage storageattach '#{machineId}'" +
+        " --storagectl 'SATA Controller' --port 2 --device 0 --type hdd --medium none"
+
     end
 
     config.trigger.before :destroy do
@@ -62,6 +90,8 @@ Vagrant.configure("2") do |config|
         machineId = File.read(".vagrant/machines/default/virtualbox/id")
         run "VBoxManage storageattach '#{machineId}'" +
         " --storagectl 'SATA Controller' --port 1 --device 0 --type hdd --medium none"
+        run "VBoxManage storageattach '#{machineId}'" +
+        " --storagectl 'SATA Controller' --port 2 --device 0 --type hdd --medium none"
     end
 
     config.vm.provision "ansible", run: "always" do |ansible|

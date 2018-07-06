@@ -66,6 +66,16 @@
             - python-psycopg2
             - blender
             - libsm6
+            # Golem dependencies
+            - openssl
+            - libffi-dev
+            - pkg-config
+            - libjpeg-dev
+            - libopenexr-dev
+            - autoconf
+            - libgmp-dev
+            - libfreeimage-dev
+            - libtool
 
         - name:   Install dependencies from testing
           apt:  name={{ item }} default_release=testing
@@ -73,6 +83,10 @@
             - python{{ python_version }}
             - python{{ python_version }}-dev
             - virtualenv
+            # Golem dependencies
+            - python3-pip
+            - python3-netifaces
+            - python3-psutil
 
         - name:   apt autoclean
           command: apt autoclean
@@ -89,12 +103,6 @@
             name:   builder
             state:  present
             groups: docker
-
-        - name:   Add docker group to vagrant user
-          user:
-            name:   vagrant
-            groups: docker
-            append: yes
 
     - become:      yes
       become_user: builder
