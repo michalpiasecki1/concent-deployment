@@ -302,6 +302,25 @@ Set `$golem_version` to specific branch or tag before proceeding.
 ansible-playbook --extra-vars golem_version=$golem_version --private-key=.vagrant/machines/default/virtualbox/private_key -u vagrant -i inventory install-golem.yml
 ```
 
+- Install golem electron in the virtual machine
+
+### Run golem gui mode
+
+Set `$golem_electron_version` to specific branch or tag before proceeding.
+
+```bash
+ansible-playbook --extra-vars golem_electron_version=$golem_electron_version --private-key=.vagrant/machines/default/virtualbox/private_key -u vagrant -i inventory install-golem-gui.yml
+```
+
+Open the virtualbox app and select `concent-vm` image, change display settings : set video memory to 128 MB and change resolution.
+Next run `vagrant up` in `concent-vm` directory. After successfully build, click right on the image in virtualbox app and click show
+Log in with use default user vagrant. Then run terminal with command:
+
+```bash
+source .profile
+golem-run-gui-mode.sh <parameters>
+```
+
 Useful command(You need be in `concent-vm` directory):
 
 - Stop virtual machine
@@ -386,4 +405,11 @@ If you want to check all golemapp usage options:
 
 ```bash
 golem-run-console-mode.sh --help
+```
+
+`golem-run-gui-mode.sh`
+- starts golemapp and golem electron gui
+
+```bash
+golem-run-gui-mode.sh --accepts-terms --password <password> --mainnet
 ```
