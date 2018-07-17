@@ -241,3 +241,77 @@ docker run                         \
 curl http://localhost:8001/
 ```
 
+## Building process for the concent signing service
+
+Step-by-step instructions to building and running `signing-service`.
+
+- Install dependencies:
+
+```bash
+apt-get update
+apt-get install make python3 python-pip python3-yaml docker.io(only on ubuntu)
+pip install yasha
+```
+
+
+- Ensure that your user is in the `docker` group and that this group exists.
+  This is necessary to be able to run docker commands without `root` privileges.
+  Note that the change will not take effect until you log out of the current shell session.
+
+```bash
+sudo groupadd docker
+sudo usermod --all --groups docker <user>
+```
+
+
+### Building the concent signing service with automatically create docker for it.
+
+- Go to `concent-deployment` repository and run makefile to build `signing-service` image:
+
+```bash
+cd <path to concent deployment repository>/containers/
+make signing-service
+```
+
+
+- Run singing-service:
+
+```bash
+docker run                                                \
+   --rm                                                   \
+   --hostname signing-service                             \
+   --network  host                                        \
+   --name     signing-service                             \
+   --volume   <path to ethereum key>:/srv/http/.ethereum/ \
+   signing-service                                        \
+   <concent_cluster_address>
+```
+
+### Building the concent signing service with manually create docker for it.
+
+- Go to `concent-deployment` repository and run makefile to build `concent-signing-service-<version>.tar.xz` package:
+
+```bash
+cd <path to concent deployment repository>/containers/
+make concent-signing-service-package
+```
+
+- Unpack the `<path to concent deployment repository>/containers/build/concent-signing-service-<version>.tar.xz` package, go to it and build docker image
+
+```bash
+cd <path to unpacked concent-signing-service-<version>.tar.xz package>/signing_service/
+docker build -t signing-service .
+```
+
+- Run singing-service:
+
+```bash
+docker run                                                \
+   --rm                                                   \
+   --hostname signing-service                             \
+   --network  host                                        \
+   --name     signing-service                             \
+   --volume   <path to ethereum key>:/srv/http/.ethereum/ \
+   signing-service                                        \
+   <concent_cluster_address>
+```

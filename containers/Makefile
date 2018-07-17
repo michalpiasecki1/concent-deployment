@@ -46,6 +46,16 @@ VERIFIER_SOURCE :=                           \
     $(VERIFIER_SOURCE_FROM_CONCENT_API)
 
 
+SIGNING_SERVICE_SOURCE_FROM_CONCENT_API :=          \
+    build/signing-service/testing.pref              \
+
+SIGNING_SERVICE_SOURCE :=                               \
+    build/signing-service/Dockerfile                    \
+    build/signing-service/install-dependencies.sh       \
+    build/signing-service/install-signing-service.sh    \
+    build/signing-service/run-signing-service.sh        \
+    $(SIGNING_SERVICE_SOURCE_FROM_CONCENT_API)
+
 ifndef IMAGE_VERSION
     IMAGE_VERSION := $(shell git describe --always --abbrev=16)
 endif
@@ -57,7 +67,7 @@ endif
 $(info IMAGE_PREFIX=$(IMAGE_PREFIX))
 
 
-all: nginx-proxy nginx-storage concent-api postgresql verifier
+all: nginx-proxy nginx-storage concent-api postgresql verifier signing-service concent-signing-service-package
 
 nginx-proxy: build/ $(NGINX_PROXY_SOURCE) build/nginx-proxy/concent-api-assets.tar build/nginx-proxy/concent-api-docs.tar
 	docker build --tag $(IMAGE_PREFIX)nginx-proxy:$(IMAGE_VERSION) build/nginx-proxy/
@@ -79,7 +89,22 @@ verifier: build/ $(VERIFIER_SOURCE) build/repositories/golem/ build/verifier/gol
 	docker build --tag $(IMAGE_PREFIX)verifier:$(IMAGE_VERSION) build/verifier/
 	docker tag $(IMAGE_PREFIX)verifier:$(IMAGE_VERSION) $(IMAGE_PREFIX)verifier:latest
 
-docker-clean: nginx-proxy-clean concent-api-clean postgresql-clean verifier-clean
+signing-service: build/ $(CONCENT_API_SOURCE) $(SIGNING_SERVICE_SOURCE) build/signing-service/signing-service/
+	docker build --tag $(IMAGE_PREFIX)signing-service:$(IMAGE_VERSION) build/signing-service/
+	docker tag $(IMAGE_PREFIX)signing-service:$(IMAGE_VERSION) $(IMAGE_PREFIX)signing-service:latest
+
+concent-signing-service-package: build/ $(CONCENT_API_SOURCE) $(SIGNING_SERVICE_SOURCE) build/concent-signing-service-%.tar.xz
+
+build/concent-signing-service-%.tar.xz:  build/signing-service/signing-service/
+	tar                                                                                                         \
+		--create                                                                                                \
+		--verbose                                                                                               \
+		--xz                                                                                                    \
+		--file="build/concent-signing-service-$(shell cat build/repositories/concent/RELEASE-VERSION).tar.xz"   \
+		--directory="build/"                                                                                    \
+		signing-service/
+
+docker-clean: nginx-proxy-clean concent-api-clean postgresql-clean verifier-clean signing-service-clean
 
 nginx-proxy-clean:
 	docker rmi $(IMAGE_PREFIX)nginx-proxy:$(IMAGE_VERSION) --force
@@ -95,6 +120,9 @@ concent-api-clean:
 
 verifier-clean:
 	docker rmi $(IMAGE_PREFIX)verifier:$(IMAGE_VERSION) --force
+
+signing-service-clean:
+	docker rmi $(IMAGE_PREFIX)signing-service:$(IMAGE_VERSION) --force
 
 build/virtualenv/: build/repositories/concent/concent_api/requirements.lock build/package-builder/build-virtualenv.sh
 	build/package-builder/build-virtualenv.sh "$<" "build"
@@ -152,6 +180,15 @@ build/repositories/concent/: build/package-builder/clone-or-update.sh /var/conce
 build/repositories/golem/: build/package-builder/clone-or-update.sh /var/concent-data/golem
 	build/package-builder/clone-or-update.sh  "golem" "$@"
 
+$(SIGNING_SERVICE_SOURCE_FROM_CONCENT_API): build/signing-service/%: build/concent-api/%
+	mkdir --parents "build/verifier/"
+	cp "$<" "$@"
+
+build/signing-service/signing-service/: build/repositories/concent/ build/concent-api/concent-api.tar
+	cp --recursive "$<signing_service/." "$@"
+	cp "$<RELEASE-VERSION" "$@"
+
+
 build/:
 	mkdir --parents "$@"
 
@@ -177,12 +214,14 @@ clean:
 	rm -rf build/
 
 
-.PHONY:                                 \
-    all                                 \
-    nginx-proxy   nginx-proxy-clean     \
-    nginx-storage nginx-storage-clean   \
-    postgresql    postgresql-clean      \
-    concent-api   concent-api-clean     \
-    verifier      verifier-clean        \
-    docker-clean                        \
+.PHONY:                                   \
+    all                                   \
+    nginx-proxy     nginx-proxy-clean     \
+    nginx-storage   nginx-storage-clean   \
+    postgresql      postgresql-clean      \
+    concent-api     concent-api-clean     \
+    verifier        verifier-clean        \
+    signing-service signing-service-clean \
+    concent-signing-service-package       \
+    docker-clean                          \
     clean

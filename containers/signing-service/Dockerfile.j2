@@ -1,0 +1,15 @@
+FROM debian:{{ debian_version }}
+
+COPY testing.pref                       /etc/apt/preferences.d/
+COPY install-dependencies.sh            /tmp/
+RUN  /tmp/install-dependencies.sh
+
+COPY signing-service/requirements.lock  /srv/http/signing_service/
+COPY install-signing-service.sh         /tmp/
+RUN  /tmp/install-signing-service.sh
+
+USER signingserviceuser
+COPY signing-service                    /srv/http/
+COPY run-signing-service.sh             /usr/local/bin/
+
+ENTRYPOINT ["/usr/local/bin/run-signing-service.sh"]

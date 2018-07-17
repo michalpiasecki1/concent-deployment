@@ -1,0 +1,9 @@
+#!/bin/bash -e
+
+virtualenv_dir=/srv/http/virtualenv
+
+# Create virtualenv and Django app's dependencies
+virtualenv --python "python{{ python_version }}" "$virtualenv_dir"
+source "$virtualenv_dir/bin/activate"
+python -m pip install --upgrade pip
+python -m pip install --requirement "/srv/http/signing_service/requirements.lock"
