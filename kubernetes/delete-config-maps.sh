@@ -6,6 +6,7 @@ kubectl delete configmap nginx-storage-configs        || true
 kubectl delete secret nginx-proxy-secrets             || true
 kubectl delete configmap file-transfer-config         || true
 kubectl delete configmap nginx-configs                || true
+kubectl delete configmap nginx-settings               || true
 kubectl delete configmap gatekeeper-settings          || true
 kubectl delete configmap conductor-settings           || true
 kubectl delete configmap conductor-worker-settings    || true
