@@ -20,6 +20,14 @@ kubectl create secret generic concent-api-secrets            \
     --from-file=secrets.py=concent-secrets/secrets.py        \
     --from-literal=__init__.py=
 
+{% if gke.cluster == "concent-dev" or gke.cluster == "concent-staging" %}
+kubectl create secret generic signing-service-secrets                      \
+    --from-file=ethereum-secrets.py=concent-secrets/ethereum-secrets.py    \
+    --from-literal=__init__.py=
+
+kubectl create --record --filename secrets/sentry-data-source.yml
+{% endif %}
+
 kubectl create configmap nginx-configs                              \
     --from-file=ssl.conf=config-maps/nginx-proxy/ssl.conf           \
     --from-file=default.conf=config-maps/nginx-proxy/default.conf

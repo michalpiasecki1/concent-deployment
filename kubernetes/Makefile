@@ -8,6 +8,7 @@ CLUSTER_SCRIPTS :=                                            \
     build/services/nginx-storage.yml                          \
     build/services/geth.yml                                   \
     build/services/rabbitmq.yml                               \
+    build/services/signing-service.yml                        \
     build/services/verifier.yml                               \
     build/create-job-dependencies.sh                          \
     build/delete-job-dependencies.sh                          \
@@ -36,10 +37,12 @@ CLUSTER_SCRIPTS :=                                            \
     build/config-maps/nginx-storage/ssl.conf                  \
     build/config-maps/nginx-storage/file-transfer-config.lua  \
     build/concent-secrets/secrets.py                          \
+    build/concent-secrets/ethereum-secrets.py                 \
     build/concent-secrets/nginx-proxy-ssl.crt                 \
     build/concent-secrets/nginx-proxy-ssl.key                 \
     build/concent-secrets/nginx-storage-ssl.crt               \
     build/concent-secrets/nginx-storage-ssl.key               \
+    build/secrets/sentry-data-source.yml                      \
     build/secrets/control-db-secrets.yml                      \
     build/secrets/storage-db-secrets.yml                      \
     build/secrets/django-admin-fixture.yaml                   \

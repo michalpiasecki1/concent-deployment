@@ -12,4 +12,6 @@ kubectl delete configmap conductor-worker-settings    || true
 kubectl delete configmap concent-api-settings         || true
 kubectl delete configmap concent-api-worker-settings  || true
 kubectl delete configmap verifier-settings            || true
+kubectl delete secret signing-service-secrets         || true
+kubectl delete secret sentry-data-source              || true
 kubectl delete secret concent-api-secrets             || true
