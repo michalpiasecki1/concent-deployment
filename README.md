@@ -241,77 +241,82 @@ docker run                         \
 curl http://localhost:8001/
 ```
 
-## Building process for the concent signing service
+## Concent Signing Service
+In addition to Concent itself, this repository contains files necessary to build the Concent Signing Service.
+`Makefile` builds a Docker container but also produces a source package that includes `Dockerfile` and all source files needed to build it.
+The package can be used to build the container without having to set up `concent-deployment`.
 
-Step-by-step instructions to building and running `signing-service`.
+### Building the Signing Service package
+This is only needed if you want to build the package yourself.
+If you have received the package and want to build and run it, skip this section.
 
-- Install dependencies:
+1. Install dependencies needed to build containers and render configuration files from templates.
 
-```bash
-apt-get update
-apt-get install make python3 python-pip python3-yaml docker.io(only on ubuntu)
-pip install yasha
-```
+    Example for Ubuntu:
 
+    ``` bash
+    apt-get update
+    apt-get install make python3 python-pip python3-yaml
+    apt-get install docker.io
+    pip install yasha
+    ```
 
-- Ensure that your user is in the `docker` group and that this group exists.
-  This is necessary to be able to run docker commands without `root` privileges.
-  Note that the change will not take effect until you log out of the current shell session.
+2. Ensure that you can start docker containers.
+    It's recommended to add your user to the `docker` group (make sure that this group exists) so that you don't have to do this as root.
+    Note that the change will not take effect until you log out of the current shell session.
 
-```bash
-sudo groupadd docker
-sudo usermod --all --groups docker <user>
-```
+    Example for Ubuntu:
 
+    ``` bash
+    sudo groupadd docker
+    sudo usermod --all --groups docker <your user name>
+    ```
 
-### Building the concent signing service with automatically create docker for it.
+3. Run make
 
-- Go to `concent-deployment` repository and run makefile to build `signing-service` image:
+    ```bash
+    cd containers/
+    make concent-signing-service-package
+    ```
 
-```bash
-cd <path to concent deployment repository>/containers/
-make signing-service
-```
+### Building the Signing Service from the package
+1. Extract the package
+2. Go to `signing_service/` directory inside the package and build the Docker image
 
+    ``` bash
+    cd signing_service/
+    docker build --tag concent-signing-service:$(cat RELEASE-VERSION) .
+    docker tag                                         \
+        concent-signing-service:$(cat RELEASE-VERSION) \
+        concent-signing-service:latest
+    ```
 
-- Run singing-service:
-
-```bash
-docker run                                                \
-   --rm                                                   \
-   --hostname signing-service                             \
-   --network  host                                        \
-   --name     signing-service                             \
-   --volume   <path to ethereum key>:/srv/http/.ethereum/ \
-   signing-service                                        \
-   <concent_cluster_address>
-```
-
-### Building the concent signing service with manually create docker for it.
-
-- Go to `concent-deployment` repository and run makefile to build `concent-signing-service-<version>.tar.xz` package:
-
-```bash
-cd <path to concent deployment repository>/containers/
-make concent-signing-service-package
-```
-
-- Unpack the `<path to concent deployment repository>/containers/build/concent-signing-service-<version>.tar.xz` package, go to it and build docker image
+### Running the Signing Service
+To run it in a docker container with access to your local network interface, run:
 
 ```bash
-cd <path to unpacked concent-signing-service-<version>.tar.xz package>/signing_service/
-docker build -t signing-service .
+docker run                                                                       \
+    --rm                                                                         \
+    --network     host                                                           \
+    --hostname    signing-service                                                \
+    --name        signing-service                                                \
+    --volume      contract.key:/etc/contract.key:ro                              \
+    --autorestart ON_FAILURE                                                     \
+    concent-signing-service                                                      \
+        --host                      concent.golem.network                        \
+        --port                      9055                                         \
+        --dsn                       https://1234:5678@talkback.golem.network/555 \
+        --ethereum-private-key-path /etc/contract.key
 ```
 
-- Run singing-service:
+This assumes that:
+- The service can connect to a Concent cluster at `concent.golem.network:9055`.
+- There's a file called `contract.key` in your local directory and that it contains the private key that can sign Ethereum transactions from the account owned by Concent contract.
+- The service can report errors to a [Sentry](https://sentry.io) instance.
+    The one given above is just an example.
+    If so, you need to provide a valid DSN for the project that should receive the reports.
+    Otherwise just skip the `--dsn` parameter.
 
-```bash
-docker run                                                \
-   --rm                                                   \
-   --hostname signing-service                             \
-   --network  host                                        \
-   --name     signing-service                             \
-   --volume   <path to ethereum key>:/srv/http/.ethereum/ \
-   signing-service                                        \
-   <concent_cluster_address>
-```
+Note that the service will crash on errors.
+The host system is responsible for restarting it in that case.
+If it's running in a Docker container you can easily achieve this with the `--autorestart ON_FAILURE` option.
